@@ -12,7 +12,7 @@ class Jogo:
         pygame.display.set_caption("Space Shooter - Projeto Base")
 
         self.clock = pygame.time.Clock()
-        self.fps = 10
+        self.fps = 60
         self.rodando = True
         self.pontos = 0
 

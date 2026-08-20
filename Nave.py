@@ -15,6 +15,7 @@ class Nave(ElementoJogo):
         self.largura_tela = largura_tela
         self.altura_tela = altura_tela
         self.vel_x = 0
+        self.vel_y = 0
         self.tiros = []  # Lista que guardará os tiros ativos
 
     def processar_evento(self, evento):
@@ -24,6 +25,10 @@ class Nave(ElementoJogo):
                 self.vel_x = -self.velocidade
             elif evento.key in (pygame.K_RIGHT, pygame.K_d):
                 self.vel_x = self.velocidade
+            elif evento.key in (pygame.K_UP, pygame.K_w):
+                self.vel_y = -self.velocidade
+            elif evento.key in (pygame.K_DOWN, pygame.K_s):
+                self.vel_y = self.velocidade
             elif evento.key == pygame.K_SPACE:
                 self.atirar()
 
@@ -32,8 +37,12 @@ class Nave(ElementoJogo):
                 self.vel_x = 0
             elif evento.key in (pygame.K_RIGHT, pygame.K_d) and self.vel_x > 0:
                 self.vel_x = 0
-
-    def mover(self):
+            elif evento.key in (pygame.K_UP, pygame.K_w) and self.vel_y < 0:
+                self.vel_y = 0
+            elif evento.key in (pygame.K_DOWN, pygame.K_s) and self.vel_y > 0:
+                self.vel_y = 0
+        
+    def mover_lateral(self):
         """Aplica o deslocamento horizontal e trava nas bordas da tela."""
         self.rect.x += self.vel_x
 
@@ -41,6 +50,15 @@ class Nave(ElementoJogo):
             self.rect.left = 0
         elif self.rect.right > self.largura_tela:
             self.rect.right = self.largura_tela
+    
+    def mover_vertical(self):
+        """Aplica o deslocamento vertical e trava nas bordas da tela."""
+        self.rect.y += self.vel_y
+
+        if self.rect.top < 0:
+            self.rect.top = 0
+        elif self.rect.bottom > self.altura_tela:
+            self.rect.bottom = self.altura_tela
 
     def atirar(self):
         largura_tiro = 4
@@ -61,7 +79,8 @@ class Nave(ElementoJogo):
                 self.tiros.remove(tiro)
 
     def atualizar(self):
-        self.mover()
+        self.mover_lateral()
+        self.mover_vertical()
         self.atualizar_tiros()
 
     def desenhar(self, tela):
