@@ -24,23 +24,20 @@ class Jogo:
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 self.rodando = False
+
             self.nave.processar_evento(evento)
 
     def checar_colisoes(self):
-        # =========================================================================
-        # TODO 4 (Alunos):
-        # A) Tiro vs Asteroide:
-        #    - Percorrer self.nave.tiros
-        #    - Se tiro.colliderect(self.asteroide.rect):
-        #        1. Remover o tiro da lista
-        #        2. Reiniciar o asteroide (self.asteroide.iniciar_status())
-        #        3. Incrementar self.pontos em 1
-        #
-        # B) Asteroide vs Nave:
-        #    - Se self.nave.rect.colliderect(self.asteroide.rect):
-        #        - Finalizar a partida (self.rodando = False ou reiniciar)
-        # =========================================================================
-        pass
+        # Tiro vs Asteroide
+        for tiro in self.nave.tiros[:]:
+            if tiro.colliderect(self.asteroide.rect):
+                self.nave.tiros.remove(tiro)
+                self.asteroide.iniciar_status()
+                self.pontos += 1
+
+        # Asteroide vs Nave
+        if self.nave.rect.colliderect(self.asteroide.rect):
+            self.rodando = False
 
     def atualizar(self):
         self.nave.atualizar()
@@ -49,13 +46,26 @@ class Jogo:
 
     def desenhar(self):
         self.tela.fill((15, 15, 25))
+
         self.nave.desenhar(self.tela)
         self.asteroide.desenhar(self.tela)
+
+        # Exibe a pontuação
+        fonte = pygame.font.Font(None, 36)
+        texto_pontos = fonte.render(
+            f"Pontos: {self.pontos}",
+            True,
+            (255, 255, 255)
+        )
+
+        self.tela.blit(texto_pontos, (10, 10))
+
         pygame.display.flip()
 
     def executar(self):
         while self.rodando:
             self.clock.tick(self.fps)
+
             self.processar_eventos()
             self.atualizar()
             self.desenhar()
