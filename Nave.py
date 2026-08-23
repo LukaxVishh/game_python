@@ -3,7 +3,7 @@ from ElementoJogo import ElementoJogo
 
 class Nave(ElementoJogo):
     def __init__(self, largura_tela, altura_tela, velocidade=6, cor=(0, 255, 100)):
-        # Inicializa a classe base com posição inicial centralizada embaixo
+      
         super().__init__(
             x=largura_tela // 2 - 20,
             y=altura_tela - 60,
@@ -16,7 +16,9 @@ class Nave(ElementoJogo):
         self.altura_tela = altura_tela
         self.vel_x = 0
         self.vel_y = 0
-        self.tiros = []  # Lista que guardará os tiros ativos
+        self.tiros = []  
+        self.space_pressionado = False  
+        self.cooldown_tiro = 0  
 
     def processar_evento(self, evento):
         """Controla os eventos de teclado para movimentação e disparo."""
@@ -30,7 +32,7 @@ class Nave(ElementoJogo):
             elif evento.key in (pygame.K_DOWN, pygame.K_s):
                 self.vel_y = self.velocidade
             elif evento.key == pygame.K_SPACE:
-                self.atirar()
+                self.space_pressionado = True
 
         elif evento.type == pygame.KEYUP:
             if evento.key in (pygame.K_LEFT, pygame.K_a) and self.vel_x < 0:
@@ -41,6 +43,8 @@ class Nave(ElementoJogo):
                 self.vel_y = 0
             elif evento.key in (pygame.K_DOWN, pygame.K_s) and self.vel_y > 0:
                 self.vel_y = 0
+            elif evento.key == pygame.K_SPACE:
+                self.space_pressionado = False
         
     def mover_lateral(self):
         """Aplica o deslocamento horizontal e trava nas bordas da tela."""
@@ -61,6 +65,7 @@ class Nave(ElementoJogo):
             self.rect.bottom = self.altura_tela
 
     def atirar(self):
+        """Cria um tiro na posição da nave"""
         largura_tiro = 4
         altura_tiro = 10
         tiro = pygame.Rect(
@@ -72,6 +77,7 @@ class Nave(ElementoJogo):
         self.tiros.append(tiro)
 
     def atualizar_tiros(self):
+        """Atualiza posição de todos os tiros"""
         velocidade_tiro = 10
         for tiro in self.tiros[:]:
             tiro.y -= velocidade_tiro
@@ -79,19 +85,34 @@ class Nave(ElementoJogo):
                 self.tiros.remove(tiro)
 
     def atualizar(self):
+        """Atualiza estado da nave"""
         self.mover_lateral()
         self.mover_vertical()
+        
+
+        if self.cooldown_tiro > 0:
+            self.cooldown_tiro -= 1
+        
+
+        if self.space_pressionado and self.cooldown_tiro == 0:
+            self.atirar()
+            self.cooldown_tiro = 5  
+        
         self.atualizar_tiros()
 
     def desenhar(self, tela):
-        # Polimorfismo: desenha a nave em formato de triângulo
+
         pontos = [
             (self.rect.centerx, self.rect.top),
             (self.rect.left, self.rect.bottom),
             (self.rect.right, self.rect.bottom)
         ]
         pygame.draw.polygon(tela, self.cor, pontos)
+        
 
-        # Desenha os tiros ativos na cor branca
+        pygame.draw.polygon(tela, (100, 255, 150), pontos, 2)
+
+
         for tiro in self.tiros:
-            pygame.draw.rect(tela, (255, 255, 255), tiro)
+            pygame.draw.rect(tela, (255, 255, 100), tiro)  
+            pygame.draw.rect(tela, (255, 255, 200), tiro, 1)  
