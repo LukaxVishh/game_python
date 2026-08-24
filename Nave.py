@@ -1,3 +1,4 @@
+import os
 import pygame
 from ElementoJogo import ElementoJogo
 
@@ -18,7 +19,23 @@ class Nave(ElementoJogo):
         self.vel_y = 0
         self.tiros = []  
         self.space_pressionado = False  
-        self.cooldown_tiro = 0  
+        self.cooldown_tiro = 0
+        self.boost_escudo = 0
+        self.boost_tiro_duplo = 0
+        self.sprite = self._carregar_sprite()
+
+    def _carregar_sprite(self):
+        """Carrega a imagem da nave da pasta assets."""
+        caminho = os.path.join(os.path.dirname(__file__), "assets", "nave_nova.png")
+
+        if not os.path.exists(caminho):
+            return None
+
+        imagem = pygame.image.load(caminho).convert_alpha()
+        return pygame.transform.smoothscale(
+            imagem,
+            (self.rect.width, self.rect.height)
+        )
 
     def processar_evento(self, evento):
         """Controla os eventos de teclado para movimentação e disparo."""
@@ -65,16 +82,26 @@ class Nave(ElementoJogo):
             self.rect.bottom = self.altura_tela
 
     def atirar(self):
-        """Cria um tiro na posição da nave"""
+        """Cria um ou dois tiros, dependendo do boost ativo."""
         largura_tiro = 4
         altura_tiro = 10
-        tiro = pygame.Rect(
-            self.rect.centerx - (largura_tiro // 2),
-            self.rect.top - altura_tiro,
-            largura_tiro,
-            altura_tiro
-        )
-        self.tiros.append(tiro)
+        deslocamentos = (-10, 10) if self.boost_tiro_duplo > 0 else (0,)
+        for deslocamento in deslocamentos:
+            self.tiros.append(pygame.Rect(
+                self.rect.centerx + deslocamento - (largura_tiro // 2),
+                self.rect.top - altura_tiro, largura_tiro, altura_tiro
+            ))
+
+    def ativar_boost(self, tipo):
+        """Ativa ou renova um boost por 5 segundos a 60 FPS."""
+        if tipo == "escudo":
+            self.boost_escudo = 300
+        elif tipo == "tiro_duplo":
+            self.boost_tiro_duplo = 300
+
+    def _atualizar_boosts(self):
+        self.boost_escudo = max(0, self.boost_escudo - 1)
+        self.boost_tiro_duplo = max(0, self.boost_tiro_duplo - 1)
 
     def atualizar_tiros(self):
         """Atualiza posição de todos os tiros"""
@@ -88,6 +115,7 @@ class Nave(ElementoJogo):
         """Atualiza estado da nave"""
         self.mover_lateral()
         self.mover_vertical()
+        self._atualizar_boosts()
         
 
         if self.cooldown_tiro > 0:
@@ -101,16 +129,21 @@ class Nave(ElementoJogo):
         self.atualizar_tiros()
 
     def desenhar(self, tela):
+        # Usa a arte da nave; o polígono continua sendo um fallback útil
+        # caso o arquivo de imagem não esteja disponível.
+        if self.sprite is not None:
+            tela.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))
+        else:
+            pontos = [
+                (self.rect.centerx, self.rect.top),
+                (self.rect.left, self.rect.bottom),
+                (self.rect.right, self.rect.bottom)
+            ]
+            pygame.draw.polygon(tela, self.cor, pontos)
+            pygame.draw.polygon(tela, (100, 255, 150), pontos, 2)
 
-        pontos = [
-            (self.rect.centerx, self.rect.top),
-            (self.rect.left, self.rect.bottom),
-            (self.rect.right, self.rect.bottom)
-        ]
-        pygame.draw.polygon(tela, self.cor, pontos)
-        
-
-        pygame.draw.polygon(tela, (100, 255, 150), pontos, 2)
+        if self.boost_escudo > 0:
+            pygame.draw.circle(tela, (80, 220, 255), self.rect.center, 28, 2)
 
 
         for tiro in self.tiros:

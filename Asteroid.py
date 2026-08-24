@@ -1,3 +1,4 @@
+import os
 import random
 import pygame
 from ElementoJogo import ElementoJogo
@@ -26,10 +27,31 @@ class Asteroid(ElementoJogo):
             cor=cor,
             velocidade=int(velocidade)
         )
+        self.sprite = self._carregar_sprite()
         self.iniciar_status()
         
         # Movimento horizontal opcional
         self.vel_x = random.randint(-2, 2)
+
+    def _carregar_sprite(self):
+        """Carrega aleatoriamente um dos sprites de asteroide."""
+        pasta = os.path.join(os.path.dirname(__file__), "assets")
+        caminhos = [
+            os.path.join(pasta, "asteroide_1.png"),
+            os.path.join(pasta, "asteroide_2.png"),
+            os.path.join(pasta, "asteroide_3.png")
+        ]
+
+        existentes = [caminho for caminho in caminhos if os.path.exists(caminho)]
+
+        if not existentes:
+            return None
+
+        imagem = pygame.image.load(random.choice(existentes)).convert_alpha()
+        return pygame.transform.smoothscale(
+            imagem,
+            (self.rect.width, self.rect.height)
+        )
 
     def iniciar_status(self):
         """Inicializa posição e velocidade do asteroide"""
@@ -48,12 +70,16 @@ class Asteroid(ElementoJogo):
             self.vel_x *= -1
 
     def desenhar(self, tela):
-        """Desenha o asteroide como círculo com variação visual"""
-        # Círculo principal
-        pygame.draw.circle(tela, self.cor, self.rect.center, self.raio)
-        
-        # Contorno para melhor visual
-        pygame.draw.circle(tela, (min(255, self.cor[0] + 50), 
-                                  min(255, self.cor[1] + 50), 
-                                  min(255, self.cor[2] + 50)), 
-                          self.rect.center, self.raio, 2)
+        """Desenha o sprite escolhido, ou um círculo se ele não existir."""
+        if self.sprite is not None:
+            tela.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))
+        else:
+            pygame.draw.circle(tela, self.cor, self.rect.center, self.raio)
+            pygame.draw.circle(
+                tela,
+                (min(255, self.cor[0] + 50), min(255, self.cor[1] + 50),
+                 min(255, self.cor[2] + 50)),
+                self.rect.center,
+                self.raio,
+                2
+            )
