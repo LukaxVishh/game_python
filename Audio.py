@@ -13,6 +13,7 @@ class Audio:
         "dano": ("phaserDown3.ogg", 0.38, 0.40),
         "game_over": ("lowDown.ogg", 0.42, 0.80),
         "recorde": ("powerUp2.ogg", 0.50, 0.50),
+        "boost": ("powerUp5.ogg", 0.42, 0.40),
         "navegar": ("click_002.ogg", 0.35, 0.20),
         "confirmar": ("confirmation_001.ogg", 0.45, 0.35),
         "voltar": ("back_001.ogg", 0.35, 0.30),

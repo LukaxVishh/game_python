@@ -41,6 +41,16 @@ python Main.py
 - As 10 melhores partidas ficam salvas no `leaderboard.json`, identificadas por
   três iniciais no estilo arcade. O arquivo é local e não vai para o repositório.
 - A nave pode ser trocada no menu **Naves**, entre as 16 disponíveis.
+- Durante a partida caem itens que a nave pode coletar:
+
+  | Item | Efeito |
+  |---|---|
+  | `S` azul | Escudo por 5s: colidir com asteroide não custa vida |
+  | `2x` laranja | Tiro duplo por 5s |
+  | `+1` rosa | Uma vida extra, na hora |
+
+  O tempo restante dos boosts temporários aparece no canto superior esquerdo, e
+  o escudo pisca quando está prestes a acabar.
 - O campo de estrelas ao fundo acelera conforme o nível sobe.
 - O jogo roda normalmente em máquinas sem placa de som: nesse caso ele
   simplesmente fica mudo, sem erro.
@@ -51,7 +61,8 @@ python Main.py
 |---|---|
 | `ElementoJogo.py` | Classe base dos objetos: `rect`, `cor`, `velocidade`, `mover()` e `desenhar()` |
 | `Nave.py` | Nave do jogador: sprite, movimentação nos dois eixos, tiros e cooldown de disparo |
-| `Asteroid.py` | Asteroide: sorteio de posição/velocidade e desenho como rocha irregular com crateras |
+| `Asteroid.py` | Asteroide: sorteio de posição/velocidade e desenho, com sprite ou polígono |
+| `Boost.py` | Itens de escudo, tiro duplo e vida extra que caem durante a partida |
 | `Audio.py` | Carrega, encurta e toca os efeitos sonoros |
 | `Fundo.py` | Campo de estrelas com parallax, compartilhado por todas as telas |
 | `Tela.py` | Classe base das telas: `processar_evento()`, `atualizar()` e `desenhar()` |
@@ -62,12 +73,13 @@ python Main.py
 | `TelaGameOver.py` | Fim de jogo e entrada das iniciais |
 | `Leaderboard.py` | Leitura e gravação do placar em JSON |
 | `Main.py` | Classe `Jogo`: game loop e troca de telas |
+| `assets/asteroides/` | Sprites dos asteroides |
 | `assets/naves/` | Sprites das naves |
 | `assets/sons/` | Efeitos sonoros |
 
 O projeto usa **herança e polimorfismo** em dois eixos:
 
-- `ElementoJogo` → `Nave` e `Asteroid`, que sobrescrevem `mover()` e `desenhar()`
+- `ElementoJogo` → `Nave`, `Asteroid` e `Boost`, que sobrescrevem `mover()` e `desenhar()`
 - `Tela` → `TelaMenu`, `TelaNaves`, `TelaLeaderboard`, `TelaJogo` e `TelaGameOver`,
   que sobrescrevem `processar_evento()`, `atualizar()` e `desenhar()`
 
@@ -82,3 +94,6 @@ Todos os assets são de [Kenney](https://kenney.nl) e estão sob licença
 - Sprites das naves (`assets/naves/`): [Simple Space](https://kenney.nl/assets/simple-space)
 - Efeitos do jogo (`assets/sons/`): [Digital Audio](https://kenney.nl/assets/digital-audio)
 - Efeitos de menu (`assets/sons/`): [Interface Sounds](https://kenney.nl/assets/interface-sounds)
+
+Os sprites dos asteroides (`assets/asteroides/`) e a mecânica de boosts vieram do
+trabalho do Eduardo na branch `eduardo/desenvolvimento`.

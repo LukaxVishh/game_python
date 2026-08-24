@@ -25,6 +25,8 @@ class Nave(ElementoJogo):
         self.space_pressionado = False
         self.cooldown_tiro = 0
         self.disparou = False
+        self.boost_escudo = 0
+        self.boost_tiro_duplo = 0
         self.sprite = sprite or self.SPRITE_PADRAO
 
     @classmethod
@@ -93,14 +95,26 @@ class Nave(ElementoJogo):
         """Cria um tiro na posição da nave"""
         largura_tiro = 4
         altura_tiro = 10
-        tiro = pygame.Rect(
-            self.rect.centerx - (largura_tiro // 2),
-            self.rect.top - altura_tiro,
-            largura_tiro,
-            altura_tiro
-        )
-        self.tiros.append(tiro)
+        deslocamentos = (-10, 10) if self.boost_tiro_duplo > 0 else (0,)
+
+        for deslocamento in deslocamentos:
+            self.tiros.append(pygame.Rect(
+                self.rect.centerx + deslocamento - (largura_tiro // 2),
+                self.rect.top - altura_tiro,
+                largura_tiro,
+                altura_tiro
+            ))
         self.disparou = True
+
+    def ativar_boost(self, tipo, duracao):
+        if tipo == "escudo":
+            self.boost_escudo = duracao
+        elif tipo == "tiro_duplo":
+            self.boost_tiro_duplo = duracao
+
+    def _atualizar_boosts(self):
+        self.boost_escudo = max(0, self.boost_escudo - 1)
+        self.boost_tiro_duplo = max(0, self.boost_tiro_duplo - 1)
 
     def atualizar_tiros(self):
         """Atualiza posição de todos os tiros"""
@@ -114,6 +128,7 @@ class Nave(ElementoJogo):
         """Atualiza estado da nave"""
         self.mover_lateral()
         self.mover_vertical()
+        self._atualizar_boosts()
 
         if self.cooldown_tiro > 0:
             self.cooldown_tiro -= 1
@@ -139,6 +154,10 @@ class Nave(ElementoJogo):
             self._desenhar_triangulo(tela)
         else:
             tela.blit(imagem, self.rect)
+
+        if self.boost_escudo > 0:
+            espessura = 3 if self.boost_escudo > 60 else 1 + (self.boost_escudo // 10) % 2 * 2
+            pygame.draw.circle(tela, (80, 220, 255), self.rect.center, 28, espessura)
 
         for tiro in self.tiros:
             pygame.draw.rect(tela, (255, 255, 100), tiro)

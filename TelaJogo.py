@@ -2,6 +2,7 @@ import random
 
 import pygame
 from Asteroid import Asteroid
+from Boost import Boost
 from Nave import Nave
 from Tela import Tela
 
@@ -13,6 +14,7 @@ class TelaJogo(Tela):
         self.contador_asteroides = 0
         self.explosoes = []
         self.asteroides = []
+        self.boosts = []
         self.nave = self._nova_nave()
         self._gerar_asteroides_iniciais()
 
@@ -38,6 +40,17 @@ class TelaJogo(Tela):
                 self.asteroides.append(Asteroid(self.jogo.largura, self.jogo.altura, self.nivel))
                 self.contador_asteroides = 0
 
+    def _adicionar_boost(self):
+        if not self.boosts and random.random() < 0.004:
+            self.boosts.append(Boost(self.jogo.largura, self.jogo.altura))
+
+    def _coletar_boost(self, boost):
+        self.jogo.audio.tocar("boost")
+        if boost.tipo == "vida":
+            self.vidas += 1
+        else:
+            self.nave.ativar_boost(boost.tipo, Boost.DURACAO)
+
     def _criar_explosao(self, pos):
         """Cria efeito de explosão"""
         self.explosoes.append({"pos": pos, "tamanho": 30, "tempo": 10})
@@ -62,9 +75,14 @@ class TelaJogo(Tela):
 
         for asteroide in self.asteroides[:]:
             if self.nave.rect.colliderect(asteroide.rect):
-                self.vidas -= 1
                 self.asteroides.remove(asteroide)
                 self._criar_explosao(self.nave.rect.center)
+
+                if self.nave.boost_escudo > 0:
+                    self.jogo.audio.tocar("explosao")
+                    continue
+
+                self.vidas -= 1
 
                 if self.vidas <= 0:
                     self.jogo.audio.tocar("game_over")
@@ -86,7 +104,16 @@ class TelaJogo(Tela):
             if asteroide.saiu_da_tela():
                 self.asteroides.remove(asteroide)
 
+        for boost in self.boosts[:]:
+            boost.mover()
+            if boost.saiu_da_tela():
+                self.boosts.remove(boost)
+            elif boost.rect.colliderect(self.nave.rect):
+                self._coletar_boost(boost)
+                self.boosts.remove(boost)
+
         self._adicionar_asteroid()
+        self._adicionar_boost()
 
         for explosao in self.explosoes[:]:
             explosao["tempo"] -= 1
@@ -103,6 +130,9 @@ class TelaJogo(Tela):
         for asteroide in self.asteroides:
             asteroide.desenhar(superficie)
 
+        for boost in self.boosts:
+            boost.desenhar(superficie)
+
         for explosao in self.explosoes:
             pygame.draw.circle(superficie, (255, 165, 0), explosao["pos"], int(explosao["tamanho"]))
             pygame.draw.circle(superficie, (255, 255, 0), explosao["pos"], int(explosao["tamanho"] * 0.6))
@@ -110,3 +140,12 @@ class TelaJogo(Tela):
         self.escrever(superficie, f"Pontos: {self.pontos}", 36, 10, self.TEXTO, x=10)
         self.escrever(superficie, f"Vidas: {self.vidas}", 36, 10, self.ALERTA, x=self.jogo.largura - 200)
         self.escrever(superficie, f"Nivel: {self.nivel}", 28, 10, (100, 200, 255))
+
+        ativos = []
+        if self.nave.boost_escudo > 0:
+            ativos.append(("escudo", self.nave.boost_escudo, (80, 220, 255)))
+        if self.nave.boost_tiro_duplo > 0:
+            ativos.append(("tiro duplo", self.nave.boost_tiro_duplo, (255, 180, 40)))
+        for i, (nome, restante, cor) in enumerate(ativos):
+            texto = f"{nome}: {restante // 60 + 1}s"
+            self.escrever(superficie, texto, 24, 44 + i * 24, cor, x=10)
