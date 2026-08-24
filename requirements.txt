@@ -1,0 +1,4 @@
+# pygame-ce é um drop-in replacement do pygame: o import continua sendo
+# "import pygame". Usamos ele porque tem wheels prontas para as versões
+# recentes do Python, onde o pygame original falha ao compilar.
+pygame-ce>=2.5.0

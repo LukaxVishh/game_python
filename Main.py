@@ -1,7 +1,6 @@
 import pygame
 from Nave import Nave
 from Asteroid import Asteroid
-from Boost import Boost
 import random
 
 
@@ -18,9 +17,7 @@ class Jogo:
         self.pontos = 0
         self.vidas = 3
         self.contador_asteroides = 0
-        self.explosoes = []
-        self.boosts = []
-        self.estrelas = self._criar_estrelas(90)
+        self.explosoes = [] 
         
 
         self.estado = "menu" 
@@ -30,72 +27,24 @@ class Jogo:
         self.asteroides = []
         self._gerar_asteroides_iniciais()
 
-    def _criar_estrelas(self, quantidade):
-        """Cria estrelas em camadas para dar sensação de profundidade."""
-        estrelas = []
-
-        for _ in range(quantidade):
-            camada = random.choice((1, 1, 1, 2, 2, 3))
-
-            if camada == 1:
-                velocidade = 0.4
-                tamanho = 1
-                brilho = random.randint(100, 160)
-            elif camada == 2:
-                velocidade = 0.8
-                tamanho = 1
-                brilho = random.randint(160, 220)
-            else:
-                velocidade = 1.4
-                tamanho = 2
-                brilho = random.randint(220, 255)
-
-            estrelas.append({
-                "x": random.randrange(self.largura),
-                "y": random.uniform(0, self.altura),
-                "velocidade": velocidade,
-                "tamanho": tamanho,
-                "cor": (brilho, brilho, brilho)
-            })
-
-        return estrelas
-
-    def _atualizar_estrelas(self):
-        """Move as estrelas para baixo e reposiciona as que saem da tela."""
-        for estrela in self.estrelas:
-            estrela["y"] += estrela["velocidade"]
-
-            if estrela["y"] >= self.altura:
-                estrela["y"] = 0
-                estrela["x"] = random.randrange(self.largura)
-
-    def _desenhar_estrelas(self):
-        """Desenha o campo de estrelas no fundo da tela."""
-        for estrela in self.estrelas:
-            pygame.draw.circle(
-                self.tela,
-                estrela["cor"],
-                (int(estrela["x"]), int(estrela["y"])),
-                estrela["tamanho"]
-            )
+    @property
+    def nivel(self):
+        return 1 + self.pontos // 50
 
     def _gerar_asteroides_iniciais(self):
-        """Gera os asteroides iniciais baseado na pontuação"""
-        quantidade = 1 + (self.pontos // 5) 
-        for _ in range(quantidade):
-            self.asteroides.append(Asteroid(self.largura, self.altura))
+        for _ in range(1 + self.nivel):
+            self.asteroides.append(Asteroid(self.largura, self.altura, self.nivel))
 
     def _adicionar_asteroid(self):
-        """Adiciona um novo asteroide aleatoriamente"""
         self.contador_asteroides += 1
-        if self.contador_asteroides > 60:  
-            if random.random() < 0.3:
-                self.asteroides.append(Asteroid(self.largura, self.altura))
-                self.contador_asteroides = 0
 
-    def _adicionar_boost(self):
-        if not self.boosts and random.random() < 0.004:
-            self.boosts.append(Boost(self.largura))
+        intervalo = max(15, 60 - self.nivel * 8)
+        chance = min(0.8, 0.3 + self.nivel * 0.1)
+
+        if self.contador_asteroides > intervalo:
+            if random.random() < chance:
+                self.asteroides.append(Asteroid(self.largura, self.altura, self.nivel))
+                self.contador_asteroides = 0
 
     def processar_eventos(self):
         for evento in pygame.event.get():
@@ -130,7 +79,6 @@ class Jogo:
         self.asteroides = []
         self._gerar_asteroides_iniciais()
         self.explosoes = []
-        self.boosts = []
 
     def reiniciar(self):
         """Reinicia o jogo após game over"""
@@ -140,7 +88,6 @@ class Jogo:
         self.nave = Nave(self.largura, self.altura)
         self.asteroides = []
         self.explosoes = []
-        self.boosts = []
 
     def checar_colisoes(self):
 
@@ -157,13 +104,9 @@ class Jogo:
 
         for asteroide in self.asteroides[:]:
             if self.nave.rect.colliderect(asteroide.rect):
+                self.vidas -= 1
                 self.asteroides.remove(asteroide)
                 self._criar_explosao(self.nave.rect.center)
-
-                if self.nave.boost_escudo > 0:
-                    continue
-
-                self.vidas -= 1
                 
                 if self.vidas <= 0:
                     self.estado = "game_over"
@@ -180,28 +123,19 @@ class Jogo:
         })
 
     def atualizar(self):
-        self._atualizar_estrelas()
-
         if self.estado != "jogando":
             return
 
         self.nave.atualizar()
         
 
-        for asteroide in self.asteroides:
+        for asteroide in self.asteroides[:]:
             asteroide.mover()
-
-        for boost in self.boosts[:]:
-            boost.mover()
-            if boost.rect.top > self.altura:
-                self.boosts.remove(boost)
-            elif boost.rect.colliderect(self.nave.rect):
-                self.nave.ativar_boost(boost.tipo)
-                self.boosts.remove(boost)
+            if asteroide.saiu_da_tela():
+                self.asteroides.remove(asteroide)
         
 
         self._adicionar_asteroid()
-        self._adicionar_boost()
         
 
         for explosao in self.explosoes[:]:
@@ -261,16 +195,12 @@ class Jogo:
     def desenhar_jogo(self):
         """Desenha o jogo em andamento"""
         self.tela.fill((15, 15, 25))
-        self._desenhar_estrelas()
 
         self.nave.desenhar(self.tela)
         
 
         for asteroide in self.asteroides:
             asteroide.desenhar(self.tela)
-
-        for boost in self.boosts:
-            boost.desenhar(self.tela)
 
 
         for explosao in self.explosoes:
@@ -283,7 +213,7 @@ class Jogo:
         
         texto_pontos = fonte.render(f"Pontos: {self.pontos}", True, (255, 255, 255))
         texto_vidas = fonte.render(f"Vidas: {self.vidas}", True, (255, 100, 100))
-        nivel = fonte_pequena.render(f"Nível: {1 + self.pontos // 50}", True, (100, 200, 255))
+        nivel = fonte_pequena.render(f"Nível: {self.nivel}", True, (100, 200, 255))
 
         self.tela.blit(texto_pontos, (10, 10))
         self.tela.blit(texto_vidas, (self.largura - 200, 10))
